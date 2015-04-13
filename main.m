@@ -19,12 +19,14 @@ function main(cmd)
   end
 end
 
+
 function globals
   global days N_hours maxgen
   days = 7;
   N_hours = 24 * days;
   maxgen = 20;
 end
+
 
 function montecarlo(N)
   % Monte Carlo simulation of the households
@@ -36,11 +38,11 @@ function montecarlo(N)
   
   figure;
   histogram(costs)
-  saveas(gcf, 'costs_mc.svg');
+  saveas(gcf, 'costs_mc.pdf');
   
   figure;
   histogram(excess)
-  saveas(excess, 'excess_mc.svg');
+  saveas(excess, 'excess_mc.pdf');
 end
 
 
@@ -70,7 +72,7 @@ function [totalcost, excess] = household(save_plots)
   % Draw from the distributions
   [demand] = makedemand(hours, demandmeanerror, demandstddev);
   [generation] = makegeneration(hours, genshape, genscale);
-  [prices] = inputprices(hours, pricesmeanerror, pricesstddev);
+  [prices] = price(hours, pricesmeanerror, pricesstddev);
 
   % Compute net demand
   netdemand = demand - generation;
@@ -88,7 +90,7 @@ function [totalcost, excess] = household(save_plots)
     xlabel('Hours')
     ylabel('kW')
     legend('Demand', 'Generation', 'Net Demand')
-    saveas(gcf, 'power.svg');
+    saveas(gcf, 'power.pdf');
 
     figure;
     bin_width = 3;
@@ -97,7 +99,7 @@ function [totalcost, excess] = household(save_plots)
     histogram(netdemand, 'BinWidth', bin_width)
     xlabel('Demand [kW]')
     legend('Gross', 'Net')
-    saveas(gcf, 'netdemand.svg');
+    saveas(gcf, 'netdemand.pdf');
 
     save('test.mat')
   end
@@ -128,13 +130,4 @@ function [generation] = makegeneration(hours, shape, scale)
   speed = wblrnd(shape, scale, size(hours));
   % Convert speed stochastic data to generation - not yet correct
   generation = min(maxgen, wind .* scale2 .* (speed .^ 3));
-end
-
-
-function [prices] = inputprices(hours, mean, stddev)
-  % This function generates the stochastic price data seen by the household.
-  % Make the stochastic matrix for the price data
-  base = sin(pi * hours / 12 + pi) + 5; % makes the basic sinusoid of prices
-  priceserror = randn(size(hours)) * stddev + mean;
-  prices = base + priceserror;
 end
