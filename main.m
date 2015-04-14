@@ -66,8 +66,8 @@ function [totalcost, excess] = household(save_plots)
   pricesmeanerror = 0;
   pricesstddev = 1;
   % Parameters for the Weibull distribution of wind speed
-  genshape = 1;
-  genscale = 0.5;
+  genshape = 2;
+  genscale = 8;
 
   % Draw from the distributions
   [demand] = makedemand(hours, demandmeanerror, demandstddev);
@@ -111,7 +111,8 @@ function [demand] = makedemand(hours, mean, stddev)
   global days
   scale = 3;
   % Make the error matrix that will sample from a standard normal distribution
-  daily = [3 3 3 3 3 4 5 7 7 5 5 5 4 4 5 7 8 9 8 6 6 5 4 3];
+  daily = [125 110 105 107 115 140 170 185 190 191 192 194 200 210 225 260 290 305 315 325 315 275 220 160];
+  daily = daily / 12;
   base = repmat(daily, 1, days) * scale;
   demanderror = randn(size(hours)) * stddev + mean;
   demand = base + demanderror;
@@ -127,7 +128,21 @@ function [generation] = makegeneration(hours, shape, scale)
   % Conditional distribution: low, medium or high wind days
   %wind = ceil(rand * 3);
   wind = rand * 3;
+  cutin = 2.7;
+  rated = 11;
+  cutout = 25;
+  maxpower = 25;
   speed = wblrnd(shape, scale, size(hours));
-  % Convert speed stochastic data to generation - not yet correct
-  generation = min(maxgen, wind .* scale2 .* (speed .^ 3));
+  generation = speed;
+  % Convert speed stochastic data to generation - corrected
+  for index = 1:length(speed)
+      if speed(index) < cutin || speed(index) > cutout
+          generation(index) = 0;
+      else if speed(index) > rated
+              generation(index) = maxpower;
+          else
+              generation(index) = maxpower*((speed(index) - cutin)/(rated - cutin))^3;
+          end
+      end
+  end
 end
