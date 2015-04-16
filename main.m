@@ -30,14 +30,14 @@ end
 
 function montecarlo(N)
   % Monte Carlo simulation of the households
-  costs = zeros([1 N]);
+  totalcost = zeros([1 N]);
   excess = zeros([1 N]);
   for draw = 1:N
-    costs(draw), excess(draw) = household;
+    [totalcost(draw) excess(draw)] = household();
   end
-  
+  save('test.mat');
   figure;
-  histogram(costs)
+  histogram(totalcost)
   saveas(gcf, 'costs_mc.pdf');
   
   figure;
