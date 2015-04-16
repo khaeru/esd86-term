@@ -73,10 +73,15 @@ function [totalcost, excess] = household(save_plots)
   [demand] = makedemand(hours, demandmeanerror, demandstddev);
   [generation] = makegeneration(hours, genshape, genscale);
   [prices] = price(hours, pricesmeanerror, pricesstddev);
-
+chargingcap = 25;
+dischargingcap = 25;
+energycap = 25;
   % Compute net demand
   netdemand = demand - generation;
-
+overgeneration = zeros(1:length(netdemand));
+overgeneration(find(netdemand>0)) = netdemand(netdemand>0); % creates an hourly matrix of when energy is available for storage.
+overgeneration(find(overgeneration<chargingcap)) = overgeneration(overgeneration<chargingcap);
+[discharged] = optimized_behavior(overgeneration, prices, dischargingcap, energycap);
   % Integrate negative-demand hours -> battery storage
   excess = -sum(max(0, netdemand));
   
@@ -145,4 +150,26 @@ function [generation] = makegeneration(hours, shape, scale)
           end
       end
   end
+end
+
+function [discharged] = optimized_behavior(overgeneration, prices, dischargingcap, energycap)
+%This function performs the linear optimization.
+
+hours = length(prices);
+overgenmatrix = ones(hours);
+overgenmatrix(1,1:hours) = overgenmatrix(1,1:hours) .* overgeneration;
+f = zeros(2*hours,1); %1st half discharge second half charge, the charging is free.
+f(1:hours) = -price; %discharging
+
+A = zeros(2*hours,2*hours);
+A(1:hours,1:hours) = -tril(ones(hours));  %discharging cap
+A(1:hours,(1+hours):(2*hours)) = tril(ones(hours));%charging cap
+A((1+hours):(2*hours),1:hours) = tril(ones(hours)); %discharging floor
+A((1+hours):(2*hours),(1+hours):(2*hours)) = -tril(ones(hours)); %charging floor
+b = [energycap*ones(hours,1); zeros(hours,1)];
+
+max_power(1:hours) = dischargingcap;
+max_power(hours+1:2*hours) = overgeneration;
+
+discharged = linprog(f,A,b,[],[],zeros(1:2*hours),max_power);
 end
