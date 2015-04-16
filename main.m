@@ -71,24 +71,26 @@ function [totalcost, excess] = household(save_plots)
 
   % Draw from the distributions
   [demand] = makedemand(hours, demandmeanerror, demandstddev);
-  [generation] = makegeneration(hours, genshape, genscale);
+  [generation speed] = makegeneration(hours, genshape, genscale);
   [prices] = price(hours, pricesmeanerror, pricesstddev);
-chargingcap = 25;
+chargingcap = 5;
 dischargingcap = 25;
 energycap = 25;
   % Compute net demand
   netdemand = demand - generation;
-overgeneration = zeros(1:length(netdemand));
-overgeneration(find(netdemand>0)) = netdemand(netdemand>0); % creates an hourly matrix of when energy is available for storage.
-overgeneration(find(overgeneration<chargingcap)) = overgeneration(overgeneration<chargingcap);
+overgeneration = zeros(1,length(netdemand));
+overgenstep = overgeneration;
+overgenstep(find(netdemand>0)) = netdemand(netdemand>0); % creates an hourly matrix of when energy is available for storage.
+overgeneration(find(overgenstep<chargingcap)) = overgenstep(overgenstep<chargingcap);
+overgeneration(find(overgenstep>chargingcap)) = chargingcap;
 [discharged] = optimized_behavior(overgeneration, prices, dischargingcap, energycap);
   % Integrate negative-demand hours -> battery storage
   excess = -sum(max(0, netdemand));
   
   % Compute electricity cost
-  cost = min(0, netdemand) .* prices;
+  cost = min(0, netdemand) .* prices - discharged(hours+1:2*hours)'.*prices;
   totalcost = sum(cost);
-
+save('test.mat')
   if logical(save_plots)
     figure;
     plot(hours, demand, 'b', hours, generation, 'g', hours, netdemand, 'r');
@@ -117,14 +119,14 @@ function [demand] = makedemand(hours, mean, stddev)
   scale = 3;
   % Make the error matrix that will sample from a standard normal distribution
   daily = [125 110 105 107 115 140 170 185 190 191 192 194 200 210 225 260 290 305 315 325 315 275 220 160];
-  daily = daily / 12;
+  daily = daily / 50;
   base = repmat(daily, 1, days) * scale;
   demanderror = randn(size(hours)) * stddev + mean;
   demand = base + demanderror;
 end
 
 
-function [generation] = makegeneration(hours, shape, scale)
+function [generation speed] = makegeneration(hours, shape, scale)
   % This function generates the stochastic wind generation profile. First it
   % makes the stochastic wind speed then it converts the wind speed to a
   % power.
@@ -137,7 +139,7 @@ function [generation] = makegeneration(hours, shape, scale)
   rated = 11;
   cutout = 25;
   maxpower = 25;
-  speed = wblrnd(shape, scale, size(hours));
+  speed = wblrnd(scale, shape, size(hours));
   generation = speed;
   % Convert speed stochastic data to generation - corrected
   for index = 1:length(speed)
@@ -159,7 +161,7 @@ hours = length(prices);
 overgenmatrix = ones(hours);
 overgenmatrix(1,1:hours) = overgenmatrix(1,1:hours) .* overgeneration;
 f = zeros(2*hours,1); %1st half discharge second half charge, the charging is free.
-f(1:hours) = -price; %discharging
+f(1:hours) = -prices; %discharging
 
 A = zeros(2*hours,2*hours);
 A(1:hours,1:hours) = -tril(ones(hours));  %discharging cap
@@ -170,6 +172,6 @@ b = [energycap*ones(hours,1); zeros(hours,1)];
 
 max_power(1:hours) = dischargingcap;
 max_power(hours+1:2*hours) = overgeneration;
-
-discharged = linprog(f,A,b,[],[],zeros(1:2*hours),max_power);
+options = optimset('LargeScale','on','Display','off','TolFun',1e-6);
+discharged = linprog(f,A,b,[],[],zeros(1,2*hours),max_power,[],options);
 end
