@@ -54,16 +54,24 @@ function montecarlo(N)
     [totalcost(draw), excess(draw), total_basic_cost(draw), ...
         total_renew_cost(draw)] = household();
   end
-
+totalcost_sort = sort(totalcost);
+excess_sort = sort(excess);
+total_basic_cost_sort = sort(total_basic_cost);
+total_renew_cost_sort = sort(total_renew_cost);
+X = 1:1:N;
   save('test.mat');
 
   figure;
   histogram(totalcost)
-  saveas(gcf, 'costs_mc.pdf');
+  savefig('costs_mc');
   
   figure;
   histogram(excess)
-  saveas(excess, 'excess_mc.pdf');
+  savefig('excess_mc');
+  
+  figure;
+  plot(X,totalcost_sort,X,total_basic_cost_sort,X,total_renew_cost_sort);
+  savefig('cdf_mc');
 end
 
 
@@ -94,6 +102,7 @@ function [totalcost, excess, total_basic_cost, total_renew_cost]...
   % Compute net demand
   netdemand = D - G;
   overgeneration = zeros(1,length(netdemand));
+  negativedemand = zeros(1, length(netdemand));
   overgenstep = overgeneration;
   % Creates an hourly matrix of when energy is available for storage.
   overgenstep(find(netdemand<0)) = netdemand(netdemand<0);
@@ -144,25 +153,25 @@ end
 function [discharged] = optimized_behavior(overgeneration, prices, ...
                                  negativedemand, dischargingcap, energycap)
   % OPTIMIZED_BEHAVIOUR Performs the linear optimization.
-
-  hours = length(prices);
-  overgenmatrix = ones(hours);
-  overgenmatrix(1,1:hours) = overgenmatrix(1,1:hours) .* overgeneration;
+global N_hours
+  
+  overgenmatrix = ones(N_hours);
+  overgenmatrix(1,1:N_hours) = overgenmatrix(1,1:N_hours) .* overgeneration;
    %1st half discharge second half charge, the charging is free.
-  f = zeros(2 * hours, 1); 
-  f(1:hours) = -prices;  % Discharging
+  f = zeros(2 * N_hours, 1); 
+  f(1:N_hours) = -prices;  % Discharging
 
-  A = zeros(2 * hours, 2 * hours);
-  A(1:hours,1:hours) = -tril(ones(hours));  % Discharging cap
-  A(1:hours,(1+hours):(2*hours)) = tril(ones(hours));  % Charging cap
-  A((1+hours):(2*hours),1:hours) = tril(ones(hours));  % Discharging floor
+  A = zeros(2 * N_hours, 2 * N_hours);
+  A(1:N_hours,1:N_hours) = -tril(ones(N_hours));  % Discharging cap
+  A(1:N_hours,(1+N_hours):(2*N_hours)) = tril(ones(N_hours));  % Charging cap
+  A((1+N_hours):(2*N_hours),1:N_hours) = tril(ones(N_hours));  % Discharging floor
   %  Charging floor
-  A((1+hours):(2*hours),(1+hours):(2*hours)) = -tril(ones(hours)); 
-  b = [energycap * ones(hours, 1); zeros(hours, 1)];
-max_power = zeros([1 2*hours]);
-  max_power(1:hours) = min(negativedemand(1:hours), dischargingcap);
-  max_power(hours+1:2*hours) = overgeneration;
+  A((1+N_hours):(2*N_hours),(1+N_hours):(2*N_hours)) = -tril(ones(N_hours)); 
+  b = [energycap * ones(N_hours, 1); zeros(N_hours, 1)];
+max_power = zeros([1 2*N_hours]);
+  max_power(1:N_hours) = min(negativedemand(1:N_hours), dischargingcap);
+  max_power(N_hours+1:2*N_hours) = overgeneration;
   options = optimset('LargeScale', 'on', 'Display', 'off', 'TolFun', 1e-6);
-  discharged = linprog(f, A, b, [], [], zeros(1, 2 * hours), max_power, [], ...
+  discharged = linprog(f, A, b, [], [], zeros(1, 2 * N_hours), max_power, [], ...
                        options);
 end
