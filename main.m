@@ -21,10 +21,23 @@ end
 
 
 function globals
-  global days N_hours maxgen
-  days = 7;
-  N_hours = 24 * days;
-  maxgen = 20;
+  % GLOBALS  Set global parameters for the household problem
+  global N_days N_hours mu_d sigma_d k_w lambda_w V_cutin V_rated V_cutout ...
+    G_max
+  % Time dimension
+  N_days = 7;
+  N_hours = 24 * N_days;
+  % Normal distribution for the random part of demand
+  mu_d = 0;
+  sigma_d = 1;
+  % Weibull distribution of wind speed
+  k_w = 2;
+  lambda_w = 8;
+  % Engineering parameters for the wind turbine
+  V_cutin = 2.7;
+  V_rated = 11;
+  V_cutout = 25;
+  G_max = 25;
 end
 
 
@@ -52,48 +65,42 @@ function [totalcost, excess] = household(save_plots)
   %   totalcost = household(save_plots)
   %     Save files 'power.svg' and 'netdemand.svg' if save_plots is true
   %     (default: false).
-  global days
+  global N_hours mu_d sigma_d lambda_w k_w V_cutin V_rated V_cutout G_max
   
   if nargin < 1
     save_plots = false;
   end
   
-  hours = 1:(24 * days);
-  % Parameters for the normal distribution of the stochastic part of demand
-  demandmeanerror = 0;
-  demandstddev = 1;
+  hours = 1:N_hours;
   % Parameters for the normal distribution of the stochastic part of prices  
   pricesmeanerror = 0;
   pricesstddev = 1;
-  % Parameters for the Weibull distribution of wind speed
-  genshape = 2;
-  genscale = 8;
 
   % Draw from the distributions
-  [demand] = makedemand(hours, demandmeanerror, demandstddev);
-  [generation speed] = makegeneration(hours, genshape, genscale);
+  D = demand(mu_d, sigma_d);
+  [G, ~] = generation(lambda_w, k_w, V_cutin, V_rated, V_cutout, G_max);
   [prices] = price(hours, pricesmeanerror, pricesstddev);
-chargingcap = 5;
-dischargingcap = 25;
-energycap = 25;
+  chargingcap = 5;
+  dischargingcap = 25;
+  energycap = 25;
   % Compute net demand
-  netdemand = demand - generation;
-overgeneration = zeros(1,length(netdemand));
-overgenstep = overgeneration;
-overgenstep(find(netdemand>0)) = netdemand(netdemand>0); % creates an hourly matrix of when energy is available for storage.
-overgeneration(find(overgenstep<chargingcap)) = overgenstep(overgenstep<chargingcap);
-overgeneration(find(overgenstep>chargingcap)) = chargingcap;
-[discharged] = optimized_behavior(overgeneration, prices, dischargingcap, energycap);
+  netdemand = D - G;
+  overgeneration = zeros(1,length(netdemand));
+  overgenstep = overgeneration;
+  overgenstep(find(netdemand>0)) = netdemand(netdemand>0); % creates an hourly matrix of when energy is available for storage.
+  overgeneration(find(overgenstep<chargingcap)) = overgenstep(overgenstep<chargingcap);
+  overgeneration(find(overgenstep>chargingcap)) = chargingcap;
+  [discharged] = optimized_behavior(overgeneration, prices, dischargingcap, energycap);
   % Integrate negative-demand hours -> battery storage
   excess = -sum(max(0, netdemand));
   
   % Compute electricity cost
   cost = min(0, netdemand) .* prices - discharged(hours+1:2*hours)'.*prices;
   totalcost = sum(cost);
-save('test.mat')
+  save('test.mat')
   if logical(save_plots)
     figure;
-    plot(hours, demand, 'b', hours, generation, 'g', hours, netdemand, 'r');
+    plot(hours, D, 'b', hours, G, 'g', hours, netdemand, 'r');
     xlabel('Hours')
     ylabel('kW')
     legend('Demand', 'Generation', 'Net Demand')
@@ -101,7 +108,7 @@ save('test.mat')
 
     figure;
     bin_width = 3;
-    histogram(demand, 'BinWidth', bin_width)
+    histogram(D, 'BinWidth', bin_width)
     hold(gca, 'on');
     histogram(netdemand, 'BinWidth', bin_width)
     xlabel('Demand [kW]')
@@ -112,47 +119,6 @@ save('test.mat')
   end
 end
 
-
-function [demand] = makedemand(hours, mean, stddev)
-  % Generates the stochastic demand profile for the household
-  global days
-  scale = 3;
-  % Make the error matrix that will sample from a standard normal distribution
-  daily = [125 110 105 107 115 140 170 185 190 191 192 194 200 210 225 260 290 305 315 325 315 275 220 160];
-  daily = daily / 50;
-  base = repmat(daily, 1, days) * scale;
-  demanderror = randn(size(hours)) * stddev + mean;
-  demand = base + demanderror;
-end
-
-
-function [generation speed] = makegeneration(hours, shape, scale)
-  % This function generates the stochastic wind generation profile. First it
-  % makes the stochastic wind speed then it converts the wind speed to a
-  % power.
-  global maxgen
-  scale2 = 5;
-  % Conditional distribution: low, medium or high wind days
-  %wind = ceil(rand * 3);
-  wind = rand * 3;
-  cutin = 2.7;
-  rated = 11;
-  cutout = 25;
-  maxpower = 25;
-  speed = wblrnd(scale, shape, size(hours));
-  generation = speed;
-  % Convert speed stochastic data to generation - corrected
-  for index = 1:length(speed)
-      if speed(index) < cutin || speed(index) > cutout
-          generation(index) = 0;
-      else if speed(index) > rated
-              generation(index) = maxpower;
-          else
-              generation(index) = maxpower*((speed(index) - cutin)/(rated - cutin))^3;
-          end
-      end
-  end
-end
 
 function [discharged] = optimized_behavior(overgeneration, prices, dischargingcap, energycap)
 %This function performs the linear optimization.
