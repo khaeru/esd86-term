@@ -106,7 +106,7 @@ function [totalcost, excess, total_basic_cost, total_renew_cost]...
   excess = -sum(max(0, netdemand));
   
   % Compute electricity cost for no renewables
-  basic_cost = demand .* P;
+  basic_cost = D .* P;
   total_basic_cost = sum(basic_cost);
   %compute electricity cost with renewables non storage
   renew_cost = min(0, netdemand) .* P;
