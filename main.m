@@ -88,7 +88,7 @@ function [totalcost, excess, total_basic_cost, total_renew_cost]...
   [G, ~] = generation(lambda_w, k_w, V_cutin, V_rated, V_cutout, G_max);
   P = price(hours, mu_p, sigma_p);
 
-  chargingcap = 5;
+  chargingcap = 25;
   dischargingcap = 25;
   energycap = 25;
   % Compute net demand
@@ -96,12 +96,14 @@ function [totalcost, excess, total_basic_cost, total_renew_cost]...
   overgeneration = zeros(1,length(netdemand));
   overgenstep = overgeneration;
   % Creates an hourly matrix of when energy is available for storage.
-  overgenstep(find(netdemand>0)) = netdemand(netdemand>0);
+  overgenstep(find(netdemand<0)) = netdemand(netdemand<0);
+  overgenstep = abs(overgenstep);
+  negativedemand(find(netdemand>0)) = netdemand(netdemand>0);
   overgeneration(find(overgenstep<chargingcap)) = overgenstep(overgenstep < ...
                                                               chargingcap);
   overgeneration(find(overgenstep>chargingcap)) = chargingcap;
-  [discharged] = optimized_behavior(overgeneration, P, dischargingcap, ...
-                                    energycap);
+  [discharged] = optimized_behavior(overgeneration, P, ...
+      negativedemand,  dischargingcap, energycap);
   % Integrate negative-demand hours -> battery storage
   excess = -sum(max(0, netdemand));
   
@@ -109,10 +111,11 @@ function [totalcost, excess, total_basic_cost, total_renew_cost]...
   basic_cost = D .* P;
   total_basic_cost = sum(basic_cost);
   %compute electricity cost with renewables non storage
-  renew_cost = min(0, netdemand) .* P;
+  renew_cost = max(0, netdemand) .* P;
   total_renew_cost = sum(renew_cost);
+ 
   %compute electricity cost with storage
-  cost = min(0, netdemand) .* P - discharged(hours+1:2*hours)'.*P;
+  cost(1:N_hours) = max(0, netdemand) .* P - discharged(1:N_hours)'.*P;
   totalcost = sum(cost);
   save('test.mat')
 
@@ -139,7 +142,7 @@ end
 
 
 function [discharged] = optimized_behavior(overgeneration, prices, ...
-                                           dischargingcap, energycap)
+                                 negativedemand, dischargingcap, energycap)
   % OPTIMIZED_BEHAVIOUR Performs the linear optimization.
 
   hours = length(prices);
@@ -156,8 +159,8 @@ function [discharged] = optimized_behavior(overgeneration, prices, ...
   %  Charging floor
   A((1+hours):(2*hours),(1+hours):(2*hours)) = -tril(ones(hours)); 
   b = [energycap * ones(hours, 1); zeros(hours, 1)];
-
-  max_power(1:hours) = dischargingcap;
+max_power = zeros([1 2*hours]);
+  max_power(1:hours) = min(negativedemand(1:hours), dischargingcap);
   max_power(hours+1:2*hours) = overgeneration;
   options = optimset('LargeScale', 'on', 'Display', 'off', 'TolFun', 1e-6);
   discharged = linprog(f, A, b, [], [], zeros(1, 2 * hours), max_power, [], ...
