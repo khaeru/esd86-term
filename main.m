@@ -48,8 +48,11 @@ function montecarlo(N)
   % Monte Carlo simulation of the households
   totalcost = zeros([1 N]);
   excess = zeros([1 N]);
+  total_basic_cost = zeros([1 N]);
+  total_renew_cost = zeros([1 N]);
   for draw = 1:N
-    [totalcost(draw), excess(draw)] = household();
+    [totalcost(draw), excess(draw), total_basic_cost(draw), ...
+        total_renew_cost(draw)] = household();
   end
 
   save('test.mat');
@@ -64,7 +67,8 @@ function montecarlo(N)
 end
 
 
-function [totalcost, excess] = household(save_plots)
+function [totalcost, excess, total_basic_cost, total_renew_cost]...
+    = household(save_plots)
   % HOUSEHOLD  Simulate the household's energy storage situation.
   %   totalcost = household()
   %   totalcost = household(save_plots)
@@ -101,7 +105,13 @@ function [totalcost, excess] = household(save_plots)
   % Integrate negative-demand hours -> battery storage
   excess = -sum(max(0, netdemand));
   
-  % Compute electricity cost
+  % Compute electricity cost for no renewables
+  basic_cost = demand .* P;
+  total_basic_cost = sum(basic_cost);
+  %compute electricity cost with renewables non storage
+  renew_cost = min(0, netdemand) .* P;
+  total_renew_cost = sum(renew_cost);
+  %compute electricity cost with storage
   cost = min(0, netdemand) .* P - discharged(hours+1:2*hours)'.*P;
   totalcost = sum(cost);
   save('test.mat')
