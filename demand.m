@@ -1,4 +1,4 @@
-function [D] = demand(mean, stddev)
+function D = demand(mean, stddev)
   % DEMAND Simulate a random demand profile for the household.
   %     D = demand(hours, mean, stddev) returns a 1-by-N_hours matrix containing
   %     a base demand with added, uncorrelated, random noise distributed

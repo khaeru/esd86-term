@@ -23,7 +23,7 @@ end
 function globals
   % GLOBALS  Set global parameters for the household problem
   global N_days N_hours mu_d sigma_d k_w lambda_w V_cutin V_rated V_cutout ...
-    G_max
+    G_max mu_p sigma_p
   % Time dimension
   N_days = 7;
   N_hours = 24 * N_days;
@@ -38,6 +38,9 @@ function globals
   V_rated = 11;
   V_cutout = 25;
   G_max = 25;
+  % Normal distribution for the random part of prices  
+  mu_p = 0;
+  sigma_p = 1;
 end
 
 
@@ -48,7 +51,9 @@ function montecarlo(N)
   for draw = 1:N
     [totalcost(draw), excess(draw)] = household();
   end
+
   save('test.mat');
+
   figure;
   histogram(totalcost)
   saveas(gcf, 'costs_mc.pdf');
@@ -65,21 +70,20 @@ function [totalcost, excess] = household(save_plots)
   %   totalcost = household(save_plots)
   %     Save files 'power.svg' and 'netdemand.svg' if save_plots is true
   %     (default: false).
-  global N_hours mu_d sigma_d lambda_w k_w V_cutin V_rated V_cutout G_max
+  global N_hours mu_d sigma_d lambda_w k_w V_cutin V_rated V_cutout G_max ...
+    mu_p sigma_p
   
   if nargin < 1
     save_plots = false;
   end
   
   hours = 1:N_hours;
-  % Parameters for the normal distribution of the stochastic part of prices  
-  pricesmeanerror = 0;
-  pricesstddev = 1;
 
   % Draw from the distributions
   D = demand(mu_d, sigma_d);
   [G, ~] = generation(lambda_w, k_w, V_cutin, V_rated, V_cutout, G_max);
-  [prices] = price(hours, pricesmeanerror, pricesstddev);
+  P = price(hours, mu_p, sigma_p);
+
   chargingcap = 5;
   dischargingcap = 25;
   energycap = 25;
@@ -92,13 +96,13 @@ function [totalcost, excess] = household(save_plots)
   overgeneration(find(overgenstep<chargingcap)) = overgenstep(overgenstep < ...
                                                               chargingcap);
   overgeneration(find(overgenstep>chargingcap)) = chargingcap;
-  [discharged] = optimized_behavior(overgeneration, prices, dischargingcap, ...
+  [discharged] = optimized_behavior(overgeneration, P, dischargingcap, ...
                                     energycap);
   % Integrate negative-demand hours -> battery storage
   excess = -sum(max(0, netdemand));
   
   % Compute electricity cost
-  cost = min(0, netdemand) .* prices - discharged(hours+1:2*hours)'.*prices;
+  cost = min(0, netdemand) .* P - discharged(hours+1:2*hours)'.*P;
   totalcost = sum(cost);
   save('test.mat')
 
