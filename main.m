@@ -95,10 +95,10 @@ function [totalcost, excess, total_basic_cost, total_renew_cost]...
   D = demand(mu_d, sigma_d);
   [G, ~] = generation(lambda_w, k_w, V_cutin, V_rated, V_cutout, G_max);
   P = price(hours, mu_p, sigma_p);
-
-  chargingcap = 25;
-  dischargingcap = 25;
-  energycap = 25;
+number_batteries = 1;
+  chargingcap = 4.4;
+  dischargingcap = 4.4;
+  energycap = 9.6;
   % Compute net demand
   netdemand = D - G;
   overgeneration = zeros(1,length(netdemand));
@@ -112,7 +112,7 @@ function [totalcost, excess, total_basic_cost, total_renew_cost]...
                                                               chargingcap);
   overgeneration(find(overgenstep>chargingcap)) = chargingcap;
   [discharged] = optimized_behavior(overgeneration, P, ...
-      negativedemand,  dischargingcap, energycap);
+      negativedemand,  dischargingcap, number_batteries*energycap);
   % Integrate negative-demand hours -> battery storage
   excess = -sum(max(0, netdemand));
   
