@@ -34,10 +34,10 @@ function globals
   k_w = 2;
   lambda_w = 8;
   % Engineering parameters for the wind turbine
-  V_cutin = 2.7;
-  V_rated = 11;
+  V_cutin = 3;
+  V_rated = 12;
   V_cutout = 25;
-  G_max = 25;
+  G_max = 3.8;
   % Normal distribution for the random part of prices  
   mu_p = 0;
   sigma_p = 1;
