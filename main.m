@@ -58,7 +58,7 @@ totalcost_sort = sort(totalcost);
 excess_sort = sort(excess);
 total_basic_cost_sort = sort(total_basic_cost);
 total_renew_cost_sort = sort(total_renew_cost);
-X = 1:1:N;
+X = 1/N:1/N:1;
   save('test.mat');
 
   figure;
@@ -70,7 +70,7 @@ X = 1:1:N;
   savefig('excess_mc');
   
   figure;
-  plot(X,totalcost_sort,X,total_basic_cost_sort,X,total_renew_cost_sort);
+  plot(totalcost_sort,X,total_basic_cost_sort,X,total_renew_cost_sort,X);
   savefig('cdf_mc');
 end
 
