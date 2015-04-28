@@ -10,5 +10,5 @@ function D = demand(mean, stddev)
   % TODO this is arbitrary: find a good value, make a global parameter
   scale = 3 / 50;
   % Repeat the basic daily profile and add normal noise
-  D = repmat(daily, 1, N_days) * scale + randn(1, N_hours) * stddev + mean;
+  D = repmat(daily, 1, N_days) * scale + randn(1, N_hours) * stddev *scale + mean;
 end

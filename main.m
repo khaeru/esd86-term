@@ -29,7 +29,7 @@ function globals
   N_hours = 24 * N_days;
   % Normal distribution for the random part of demand
   mu_d = 0;
-  sigma_d = 1;
+  sigma_d = 13;
   % Weibull distribution of wind speed
   k_w = 2;
   lambda_w = 8;
