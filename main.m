@@ -23,7 +23,7 @@ end
 function globals
   % GLOBALS  Set global parameters for the household problem
   global N_days N_hours mu_d sigma_d k_w lambda_w V_cutin V_rated V_cutout ...
-    G_max mu_p sigma_p
+    G_max mu_p sigma_p Fontsize
   % Time dimension
   N_days = 7;
   N_hours = 24 * N_days;
@@ -41,10 +41,13 @@ function globals
   % Normal distribution for the random part of prices  
   mu_p = 0;
   sigma_p = 1;
+  %Style
+  Fontsize = 20;
 end
 
 
 function montecarlo(N)
+global Fontsize
   % Monte Carlo simulation of the households
   totalcost = zeros([1 N]);
   excess = zeros([1 N]);
@@ -59,18 +62,28 @@ excess_sort = sort(excess);
 total_basic_cost_sort = sort(total_basic_cost);
 total_renew_cost_sort = sort(total_renew_cost);
 X = 1/N:1/N:1;
+Cost_Mean(1) = mean(total_basic_cost);
+Cost_Mean(2) = mean(total_renew_cost);
+Cost_Mean(3) = mean(totalcost);
+Cost_Variance(1) = var(total_basic_cost);
+Cost_Variance(2) = var(total_renew_cost);
+Cost_Variance(3) = var(totalcost);
   save('test.mat');
 
-  figure;
+  figure('units','normalized','outerposition', [0 0 1 1]);
   histogram(totalcost)
   savefig('costs_mc');
   
-  figure;
+  figure('units','normalized','outerposition', [0 0 1 1]);
   histogram(excess)
   savefig('excess_mc');
   
-  figure;
-  plot(totalcost_sort,X,total_basic_cost_sort,X,total_renew_cost_sort,X);
+  figure('units','normalized','outerposition', [0 0 1 1]);
+  plot(total_basic_cost_sort,X,total_renew_cost_sort,X,totalcost_sort,X,...
+      'LineWidth', 4);
+  legend({'Cost without renewables', 'Cost with only renewables' 'Cost with storage'}, 'Location', 'NorthEast', 'FontSize', Fontsize)
+  xlabel('Weekly Electricity Bill ($)', 'FontSize', Fontsize);
+  ylabel('Probability', 'FontSize', Fontsize);
   savefig('cdf_mc');
 end
 
@@ -83,7 +96,7 @@ function [totalcost, excess, total_basic_cost, total_renew_cost]...
   %     Save files 'power.svg' and 'netdemand.svg' if save_plots is true
   %     (default: false).
   global N_hours mu_d sigma_d lambda_w k_w V_cutin V_rated V_cutout G_max ...
-    mu_p sigma_p
+    mu_p sigma_p Fontsize
   
   if nargin < 1
     save_plots = false;
@@ -111,7 +124,7 @@ number_batteries = 1;
   overgeneration(find(overgenstep<chargingcap)) = overgenstep(overgenstep < ...
                                                               chargingcap);
   overgeneration(find(overgenstep>chargingcap)) = chargingcap;
-  [discharged] = optimized_behavior(overgeneration, P, ...
+  [discharged stored] = optimized_behavior(overgeneration, P, ...
       negativedemand,  dischargingcap, number_batteries*energycap);
   % Integrate negative-demand hours -> battery storage
   excess = -sum(max(0, netdemand));
@@ -129,28 +142,51 @@ number_batteries = 1;
   save('test.mat')
 
   if logical(save_plots)
-    figure;
-    plot(hours, D, 'b', hours, G, 'g', hours, netdemand, 'r');
-    xlabel('Hours')
-    ylabel('kW')
-    legend('Demand', 'Generation', 'Net Demand')
-    saveas(gcf, 'power.pdf');
-
-    figure;
+    figure('units','normalized','outerposition', [0 0 1 1]);
+    plot(hours(1:60), D(1:60), 'b', hours(1:60), G(1:60), 'g', hours(1:60), netdemand(1:60), 'r', 'Linewidth', 4);
+    hold on
+    plot(hours(1:60), zeros([1 60]), 'LineWidth', 4, 'LineStyle', ':', 'Color', 'k');
+    xlabel('Time (hours)', 'FontSize', Fontsize)
+    ylabel('Power (kW)', 'FontSize', Fontsize)
+    legend({'Demand' 'Generation' 'Net Demand'}, 'FontSize', Fontsize)
+    savefig('NetDemand_lines');
+    hold off
+    
+    figure('units','normalized','outerposition', [0 0 1 1]);
+    plot(hours, stored, 'b', hours, overgenstep, 'r', 'Linewidth', 4);
+    hold on
+    plot(hours, ones([1 N_hours])*energycap*number_batteries, 'LineStyle', ':', 'Color', 'k', 'LineWidth', 4);
+    hold off
+    xlabel('Time (hours)', 'FontSize', Fontsize)
+    ylabel('Energy (kWh)', 'FontSize', Fontsize)
+    legend({'Storage' 'Over Generation' 'Energy Capacity'}, 'FontSize', Fontsize)
+    savefig('Storage_Use_WithGen');
+    
+    figure('units','normalized','outerposition', [0 0 1 1]);
+    plot(hours, stored, 'b',  'Linewidth', 4);
+    hold on
+    plot(hours, ones([1 N_hours])*energycap*number_batteries, 'LineStyle', ':', 'Color', 'k', 'LineWidth', 4);
+    hold off
+    xlabel('Time (hours)', 'FontSize', Fontsize)
+    ylabel('Energy (kWh)', 'FontSize', Fontsize)
+    legend({'Storage'  'Energy Capacity'}, 'FontSize', Fontsize)
+    savefig('Storage_Use');
+    
+    figure('units','normalized','outerposition', [0 0 1 1]);
     bin_width = 3;
     histogram(D, 'BinWidth', bin_width)
     hold(gca, 'on');
     histogram(netdemand, 'BinWidth', bin_width)
-    xlabel('Demand [kW]')
-    legend('Gross', 'Net')
-    saveas(gcf, 'netdemand.pdf');
+    xlabel('Demand [kW]', 'FontSize', Fontsize)
+    legend({'Gross'  'Net'}, 'FontSize', Fontsize)
+    savefig('NetDemand_hist');
 
     save('test.mat')
   end
 end
 
 
-function [discharged] = optimized_behavior(overgeneration, prices, ...
+function [discharged stored] = optimized_behavior(overgeneration, prices, ...
                                  negativedemand, dischargingcap, energycap)
   % OPTIMIZED_BEHAVIOUR Performs the linear optimization.
 global N_hours
@@ -174,4 +210,6 @@ max_power = zeros([1 2*N_hours]);
   options = optimset('LargeScale', 'on', 'Display', 'off', 'TolFun', 1e-6);
   discharged = linprog(f, A, b, [], [], zeros(1, 2 * N_hours), max_power, [], ...
                        options);
+  stored = zeros([1 N_hours]);
+  stored = cumsum(discharged(1+N_hours:2*N_hours)) - cumsum(discharged(1:N_hours));
 end
