@@ -23,7 +23,7 @@ end
 function globals
   % GLOBALS  Set global parameters for the household problem
   global N_days N_hours mu_d sigma_d k_w lambda_w V_cutin V_rated V_cutout ...
-    G_max mu_p sigma_p Fontsize
+    G_max Fontsize
   % Time dimension
   N_days = 7;
   N_hours = 24 * N_days;
@@ -38,9 +38,6 @@ function globals
   V_rated = 12;
   V_cutout = 25;
   G_max = 3.8;
-  % Normal distribution for the random part of prices  
-  mu_p = 0;
-  sigma_p = 1;
   %Style
   Fontsize = 20;
 end
@@ -96,7 +93,7 @@ function [totalcost, excess, total_basic_cost, total_renew_cost]...
   %     Save files 'power.svg' and 'netdemand.svg' if save_plots is true
   %     (default: false).
   global N_hours mu_d sigma_d lambda_w k_w V_cutin V_rated V_cutout G_max ...
-    mu_p sigma_p Fontsize
+    Fontsize
   
   if nargin < 1
     save_plots = false;
@@ -107,7 +104,7 @@ function [totalcost, excess, total_basic_cost, total_renew_cost]...
   % Draw from the distributions
   D = demand(mu_d, sigma_d);
   [G, ~] = generation(lambda_w, k_w, V_cutin, V_rated, V_cutout, G_max);
-  P = price(hours, mu_p, sigma_p);
+  [P, ~] = price();
 number_batteries = 1;
   chargingcap = 4.4;
   dischargingcap = 4.4;
