@@ -26,7 +26,7 @@ function [P Pm] = price(B, S)
   sigma = 0.002;                % Scale factor for random increments
   k = exp(-alpha * dt);         % Pre-compute a frequently used factor
   % Mean prices
-  mu = 0.02 * sin(2 * pi * time / (24 * 60) + pi) + 0.05;
+  mu = 0.02 * sin(2 * pi * time / (24 * 60) + pi) + 0.205; % Note I made this .205 to be in accordance with the PG&E electric rates.
   % Preallocate and set initial value
   Pm = zeros(size(time));
   Pm(1) = mu(1);

@@ -106,9 +106,9 @@ function [totalcost, excess, total_basic_cost, total_renew_cost]...
   [G, ~] = generation(lambda_w, k_w, V_cutin, V_rated, V_cutout, G_max);
   [P, ~] = price();
 number_batteries = 1;
-  chargingcap = 4.4;
-  dischargingcap = 4.4;
-  energycap = 9.6;
+  chargingcap = .81;
+  dischargingcap = .81;
+  energycap = .81;
   % Compute net demand
   netdemand = D - G;
   overgeneration = zeros(1,length(netdemand));
@@ -150,7 +150,7 @@ number_batteries = 1;
     hold off
     
     figure('units','normalized','outerposition', [0 0 1 1]);
-    plot(hours, stored, 'b', hours, overgenstep, 'r', 'Linewidth', 4);
+    plot(hours, stored, 'b', hours, overgeneration, 'r', 'Linewidth', 4);
     hold on
     plot(hours, ones([1 N_hours])*energycap*number_batteries, 'LineStyle', ':', 'Color', 'k', 'LineWidth', 4);
     hold off
