@@ -73,8 +73,10 @@ Cost_Variance(i,2) = var(total_renew_cost(i,:));
 Cost_Variance(i,3) = var(totalcost(i,:));
     end
     renewline = sort(total_renew_cost(:));
+    renewline = renewline';
     basicline = sort(total_basic_cost(:));
-    Y = 1/(N*i):1/(N*i):(N*i);
+    basicline = basicline';
+    Y = 1/(N*i):1/(N*i):1;
   save('test.mat');
 
   figure('units','normalized','outerposition', [0 0 1 1]);
@@ -86,9 +88,11 @@ Cost_Variance(i,3) = var(totalcost(i,:));
   savefig('excess_mc');
   
   figure('units','normalized','outerposition', [0 0 1 1]);
-  plot(basicline,Y,renewline,Y,totalcost_sort,X,...
-      'LineWidth', 4);
-  legend({'Cost without renewables', 'Cost with only renewables' 'Cost with 1 Battery' 'Cost with 2 Battery' 'Cost with 3 Battery' 'Cost with 4 Battery' 'Cost with 5 Battery'}, 'Location', 'NorthEast', 'FontSize', Fontsize)
+  plot(basicline,Y,renewline,Y,'LineWidth', 4);
+  hold on
+  plot(totalcost_sort,X,'LineWidth', 4);
+  hold off
+  legend({'Cost without renewables', 'Cost with only renewables' 'Cost with 1 Battery' 'Cost with 2 Batteries' 'Cost with 3 Batteries' 'Cost with 4 Batteries' 'Cost with 5 Batteries'}, 'Location', 'NorthEast', 'FontSize', Fontsize)
   xlabel('Weekly Electricity Bill ($)', 'FontSize', Fontsize);
   ylabel('Probability', 'FontSize', Fontsize);
   savefig('cdf_mc');
