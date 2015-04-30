@@ -78,11 +78,7 @@ X = 1/N:1/N:1;
     [totalcost(i,draw), excess(i,draw), total_basic_cost(i,draw), ...
         total_renew_cost(i,draw)] = household([],number_batteries(i));
   end
-    
-totalcost_sort(i,:) = sort(totalcost(i,:));
-excess_sort(i,:) = sort(excess(i,:));
-total_basic_cost_sort(i,:) = sort(total_basic_cost(i,:));
-total_renew_cost_sort(i,:) = sort(total_renew_cost(i,:));
+   
     
 
 Cost_Mean(i,1) = mean(total_basic_cost(i,:));
@@ -92,10 +88,21 @@ Cost_Variance(i,1) = var(total_basic_cost(i,:));
 Cost_Variance(i,2) = var(total_renew_cost(i,:));
 Cost_Variance(i,3) = var(totalcost(i,:));
     end
+    
+    totalcost_sort = sort(totalcost,2);
+excess_sort = sort(excess,2);
+total_basic_cost_sort = sort(total_basic_cost,2);
+total_renew_cost_sort = sort(total_renew_cost,2);
+    
+    
     renewline = sort(total_renew_cost(:));
     renewline = renewline';
     basicline = sort(total_basic_cost(:));
     basicline = basicline';
+    
+    Battery_annuity = 3.4;
+    Batt_ann_matrix = Battery_annuity * repmat(number_batteries',1,N);
+    
     Y = 1/(N*i):1/(N*i):1;
   save('test.mat');
 
@@ -116,6 +123,18 @@ Cost_Variance(i,3) = var(totalcost(i,:));
   xlabel('Weekly Electricity Bill ($)', 'FontSize', Fontsize);
   ylabel('Probability', 'FontSize', Fontsize);
   savefig('cdf_mc');
+  
+    figure('units','normalized','outerposition', [0 0 1 1]);
+  plot(basicline,Y,renewline,Y,'LineWidth', 4);
+  hold on
+  plot(totalcost_sort+Batt_ann_matrix,X,'LineWidth', 4);
+  hold off
+  legend({'Cost without renewables', 'Cost with only renewables' 'Cost with 1 Battery' 'Cost with 2 Batteries' 'Cost with 3 Batteries' 'Cost with 4 Batteries' 'Cost with 5 Batteries'}, 'Location', 'NorthEast', 'FontSize', Fontsize)
+  xlabel('Weekly Electricity Bill ($)', 'FontSize', Fontsize);
+  ylabel('Probability', 'FontSize', Fontsize);
+  savefig('cdf_mc_annuity');
+  
+  
 end
 
 
