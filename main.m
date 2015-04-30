@@ -16,6 +16,26 @@ function main(cmd)
     % Run a single simulation, saving the plots
     case 'single'
       household(true,1)
+
+    case 'prices'
+      % Generate a plot contrasting different price aggregation levels
+      P = price();
+      P1 = agg_price(P, 1, 1);
+      P2 = agg_price(P, 4, 1);
+      P3 = agg_price(P, 6, 4);
+      P4 = agg_price(P, 24, 1);
+      x = 1:size(P, 2);
+      figure('units', 'normalized', 'outerposition', [0 0 1 1]);
+      hold on;
+      global N_hours;
+      hours = 1:N_hours
+      [x1 y1] = stairs((hours' - 1) * 60, P1);
+      [x2 y2] = stairs((hours' - 1) * 60, P2);
+      [x3 y3] = stairs((hours' - 1) * 60, P3);
+      [x4 y4] = stairs((hours' - 1) * 60, P4);
+      plot(x, P)
+      plot(x1, y1, x2, y2, x3, y3, x4, y4, 'LineWidth', 3);
+      savefig('Price_example')
   end
 end
 
@@ -118,7 +138,7 @@ function [totalcost, excess, total_basic_cost, total_renew_cost]...
   % Draw from the distributions
   D = demand(mu_d, sigma_d);
   [G, ~] = generation(lambda_w, k_w, V_cutin, V_rated, V_cutout, G_max);
-  [P, ~] = price();
+  P = agg_price(price());
 
   chargingcap = .81;
   dischargingcap = .81;
