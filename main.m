@@ -15,7 +15,7 @@ function main(cmd)
   
     % Run a single simulation, saving the plots
     case 'single'
-      household(true)
+      household(true,1)
   end
 end
 
@@ -46,25 +46,35 @@ end
 function montecarlo(N)
 global Fontsize
   % Monte Carlo simulation of the households
-  totalcost = zeros([1 N]);
-  excess = zeros([1 N]);
-  total_basic_cost = zeros([1 N]);
-  total_renew_cost = zeros([1 N]);
-  for draw = 1:N
-    [totalcost(draw), excess(draw), total_basic_cost(draw), ...
-        total_renew_cost(draw)] = household();
-  end
-totalcost_sort = sort(totalcost);
-excess_sort = sort(excess);
-total_basic_cost_sort = sort(total_basic_cost);
-total_renew_cost_sort = sort(total_renew_cost);
+ 
+  number_batteries = [1 2 3 4 5];
 X = 1/N:1/N:1;
-Cost_Mean(1) = mean(total_basic_cost);
-Cost_Mean(2) = mean(total_renew_cost);
-Cost_Mean(3) = mean(totalcost);
-Cost_Variance(1) = var(total_basic_cost);
-Cost_Variance(2) = var(total_renew_cost);
-Cost_Variance(3) = var(totalcost);
+  totalcost = zeros([length(number_batteries) N]);
+  excess = zeros([length(number_batteries) N]);
+  total_basic_cost = zeros([length(number_batteries) N]);
+  total_renew_cost = zeros([length(number_batteries) N]);
+    for i = 1:length(number_batteries)
+  for draw = 1:N
+    [totalcost(i,draw), excess(i,draw), total_basic_cost(i,draw), ...
+        total_renew_cost(i,draw)] = household([],number_batteries(i));
+  end
+    
+totalcost_sort(i,:) = sort(totalcost(i,:));
+excess_sort(i,:) = sort(excess(i,:));
+total_basic_cost_sort(i,:) = sort(total_basic_cost(i,:));
+total_renew_cost_sort(i,:) = sort(total_renew_cost(i,:));
+    
+
+Cost_Mean(i,1) = mean(total_basic_cost(i,:));
+Cost_Mean(i,2) = mean(total_renew_cost(i,:));
+Cost_Mean(i,3) = mean(totalcost(i,:));
+Cost_Variance(i,1) = var(total_basic_cost(i,:));
+Cost_Variance(i,2) = var(total_renew_cost(i,:));
+Cost_Variance(i,3) = var(totalcost(i,:));
+    end
+    renewline = sort(total_renew_cost(:));
+    basicline = sort(total_basic_cost(:));
+    Y = 1/(N*i):1/(N*i):(N*i);
   save('test.mat');
 
   figure('units','normalized','outerposition', [0 0 1 1]);
@@ -76,9 +86,9 @@ Cost_Variance(3) = var(totalcost);
   savefig('excess_mc');
   
   figure('units','normalized','outerposition', [0 0 1 1]);
-  plot(total_basic_cost_sort,X,total_renew_cost_sort,X,totalcost_sort,X,...
+  plot(basicline,Y,renewline,Y,totalcost_sort,X,...
       'LineWidth', 4);
-  legend({'Cost without renewables', 'Cost with only renewables' 'Cost with storage'}, 'Location', 'NorthEast', 'FontSize', Fontsize)
+  legend({'Cost without renewables', 'Cost with only renewables' 'Cost with 1 Battery' 'Cost with 2 Battery' 'Cost with 3 Battery' 'Cost with 4 Battery' 'Cost with 5 Battery'}, 'Location', 'NorthEast', 'FontSize', Fontsize)
   xlabel('Weekly Electricity Bill ($)', 'FontSize', Fontsize);
   ylabel('Probability', 'FontSize', Fontsize);
   savefig('cdf_mc');
@@ -86,7 +96,7 @@ end
 
 
 function [totalcost, excess, total_basic_cost, total_renew_cost]...
-    = household(save_plots)
+    = household(save_plots, number_batteries)
   % HOUSEHOLD  Simulate the household's energy storage situation.
   %   totalcost = household()
   %   totalcost = household(save_plots)
@@ -105,7 +115,7 @@ function [totalcost, excess, total_basic_cost, total_renew_cost]...
   D = demand(mu_d, sigma_d);
   [G, ~] = generation(lambda_w, k_w, V_cutin, V_rated, V_cutout, G_max);
   [P, ~] = price();
-number_batteries = 1;
+
   chargingcap = .81;
   dischargingcap = .81;
   energycap = .81;
