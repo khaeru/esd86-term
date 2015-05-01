@@ -168,7 +168,7 @@ function [totalcost, excess, total_basic_cost, total_renew_cost]...
 
   % Draw from the distributions
   D = demand(mu_d, sigma_d);
-  [G, ~] = generation(lambda_w, k_w, V_cutin, V_rated, V_cutout, G_max);
+  [G, ~] = generation_ordered(lambda_w, k_w, V_cutin, V_rated, V_cutout, G_max);
   P = agg_price(price());
 
   chargingcap = .81;
