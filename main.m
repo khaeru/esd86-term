@@ -129,7 +129,7 @@ total_renew_cost_sort = sort(total_renew_cost,2);
     figure('units','normalized','outerposition', [0 0 1 1]);
   plot(basicline(1:N*i-1),diff(Y)./diff(basicline),renewline(1:N*i-1),diff(Y)./diff(renewline),'LineWidth', 4);
   hold on
-  plot(totalcost_sort(1:N-1), diff(X)./diff(totalcost_sort(1,:)),'LineWidth', 4);
+  plot(totalcost_sort(1,1:N-1), diff(X)./diff(totalcost_sort(1,:)),'LineWidth', 4);
   hold off
   legend({'Cost without renewables', 'Cost with only renewables' 'Cost with 1 Battery' }, 'Location', 'NorthEast', 'FontSize', Fontsize)
   xlabel('Weekly Electricity Bill ($)', 'FontSize', Fontsize);
