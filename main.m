@@ -68,7 +68,7 @@ global Fontsize
   % Monte Carlo simulation of the households
  
   number_batteries = [1 2 3 4 5];
-X = 1/N:1/N:1;
+
   totalcost = zeros([length(number_batteries) N]);
   excess = zeros([length(number_batteries) N]);
   total_basic_cost = zeros([length(number_batteries) N]);
@@ -102,8 +102,10 @@ total_renew_cost_sort = sort(total_renew_cost,2);
     
     Battery_annuity = 3.4;
     Batt_ann_matrix = Battery_annuity * repmat(number_batteries',1,N);
-    
+    X = 1/N:1/N:1;
+    X_diff = 1/(N-1):1/(N-1):1;
     Y = 1/(N*i):1/(N*i):1;
+    Y_diff = 1/(N*i-1):1/(N*i-1):1;
   save('test.mat');
 
   figure('units','normalized','outerposition', [0 0 1 1]);
@@ -123,6 +125,16 @@ total_renew_cost_sort = sort(total_renew_cost,2);
   xlabel('Weekly Electricity Bill ($)', 'FontSize', Fontsize);
   ylabel('Probability', 'FontSize', Fontsize);
   savefig('cdf_mc');
+  
+    figure('units','normalized','outerposition', [0 0 1 1]);
+  plot(basicline(1:N*i-1),diff(Y)./diff(basicline),renewline(1:N*i-1),diff(Y)./diff(renewline),'LineWidth', 4);
+  hold on
+  plot(totalcost_sort(1:N-1), diff(X)./diff(totalcost_sort(1,:)),'LineWidth', 4);
+  hold off
+  legend({'Cost without renewables', 'Cost with only renewables' 'Cost with 1 Battery' }, 'Location', 'NorthEast', 'FontSize', Fontsize)
+  xlabel('Weekly Electricity Bill ($)', 'FontSize', Fontsize);
+  ylabel('Probability', 'FontSize', Fontsize);
+  savefig('pdf_mc');
   
     figure('units','normalized','outerposition', [0 0 1 1]);
   plot(basicline,Y,renewline,Y,'LineWidth', 4);
