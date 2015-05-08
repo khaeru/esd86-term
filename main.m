@@ -44,7 +44,7 @@ function globals
   % GLOBALS  Set global parameters for the household problem.
 
   global N_days N_hours mu_d sigma_d k_w lambda_w V_cutin V_rated V_cutout ...
-    G_max Fontsize
+    G_max Fontsize Efficiency
 
   % Time dimension
   N_days = 7;
@@ -62,6 +62,8 @@ function globals
   G_max = 3.8;
   % Style of plots
   Fontsize = 20;
+  % Engineering parameters for storage
+  Efficiency = .9;
 end
 
 
@@ -105,7 +107,7 @@ function montecarlo(N)
   X_diff = 1/(N-1):1/(N-1):1;
   Y = 1/(N*i):1/(N*i):1;
   Y_diff = 1/(N*i-1):1/(N*i-1):1;
-  save('test.mat');
+  %save('test.mat');
 
   H = newfig();
   histogram(totalcost)
@@ -166,7 +168,7 @@ function [totalcost, excess, total_basic_cost, total_renew_cost]...
 
   % Draw from the distributions
   D = demand(mu_d, sigma_d);
-  [G, ~] = generation_ordered(lambda_w, k_w, V_cutin, V_rated, V_cutout, G_max);
+  [G, ~] = generation(lambda_w, k_w, V_cutin, V_rated, V_cutout, G_max);
   P = agg_price(price());
 
   chargingcap = .81;
@@ -199,7 +201,7 @@ function [totalcost, excess, total_basic_cost, total_renew_cost]...
   %compute electricity cost with storage
   cost(1:N_hours) = max(0, netdemand) .* P - discharged(1:N_hours)'.*P;
   totalcost = sum(cost);
-  save('test.mat');
+  %save('test.mat');
 
   if logical(save_plots)
     H = newfig();
@@ -245,7 +247,7 @@ end
 function [discharged, stored] = optimized_behavior(overgeneration, prices, ...
                                  negativedemand, dischargingcap, energycap)
   % OPTIMIZED_BEHAVIOUR Performs the linear optimization.
-  global N_hours
+  global N_hours Efficiency
   
   %overgenmatrix = ones(N_hours);
   %overgenmatrix(1,1:N_hours) = overgenmatrix(1,1:N_hours) .* overgeneration;
@@ -263,7 +265,7 @@ function [discharged, stored] = optimized_behavior(overgeneration, prices, ...
   b = [energycap * ones(N_hours, 1); zeros(N_hours, 1)];
   max_power = zeros([1 2*N_hours]);
   max_power(1:N_hours) = min(negativedemand(1:N_hours), dischargingcap);
-  max_power(N_hours+1:2*N_hours) = overgeneration;
+  max_power(N_hours+1:2*N_hours) = overgeneration*Efficiency;
   options = optimset('LargeScale', 'on', 'Display', 'off', 'TolFun', 1e-6);
   discharged = linprog(f, A, b, [], [], zeros(1, 2 * N_hours), max_power, [], ...
                        options);
