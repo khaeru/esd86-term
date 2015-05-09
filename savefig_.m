@@ -1,5 +1,6 @@
 function savefig_(H, name)
   % SAVEFIG_ Save a figure to both .fig and .pdf files.
-  savefig(H, name)
-  print(H, '-dpdf', name)
+  name = fullfile('figure', name);
+  savefig(H, name);
+  saveTightFigure(H, strcat(name, '.pdf'));
 end

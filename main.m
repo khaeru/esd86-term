@@ -33,9 +33,16 @@ function main(cmd)
       [x4, y4] = stairs((hours' - 1) * 60, P4);
 
       H = newfig();
-      plot(x, P)
-      plot(x1, y1, x2, y2, x3, y3, x4, y4, 'LineWidth', 3);
-      savefig_(H, 'price_example');
+      xlabel('Time (hour)');
+      ylabel('Price ($/kW·h)');
+
+      x1 = x1 ./ 60;
+      plot(x ./ 60, P)
+      savefig_(H, 'price_example1');
+      plot(x1, y1, x1, y2, x1, y3, x1, y4, 'LineWidth', 3);
+      legend({'Spot', '1 h mean', '4 h mean', '4 h mean, 3 h offset', ...
+              '24 h mean'})
+      savefig_(H, 'price_example2');
   end
 end
 
