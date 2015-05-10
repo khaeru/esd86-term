@@ -11,8 +11,6 @@ function [totalcost, excess, total_basic_cost, total_renew_cost]...
     save_plots = false;
   end
   
-  hours = 1:N_hours;
-
   % Draw from the distributions
   D = demand(mu_d, sigma_d);
   V = wind(lambda_w, k_w, 'simple');
@@ -21,63 +19,75 @@ function [totalcost, excess, total_basic_cost, total_renew_cost]...
   
   % Compute net demand
   netdemand = D - G;
-
   % Creates an hourly matrix of when energy is available for storage.
-  overgeneration = max(0, -netdemand);
-  overgeneration(overgeneration > c_in) = c_in;
-
+  overgen = max(0, -netdemand);
   % Demand unmet by generation
-  negativedemand = max(0, netdemand);
+  unmet = max(0, netdemand);
 
-  [discharged, stored] = optimized_behavior(overgeneration, P, ...
-                                            negativedemand, c_out, ...
-                                            number_batteries * e_max);
-
+  [charge, stored, savings] = optimized_behavior(overgen, P, unmet, ...
+                                                 number_batteries * e_max);
+                                               
   % Integrate negative-demand hours -> battery storage
-  excess = -sum(max(0, netdemand));
+  excess = -sum(unmet);
   
   % Compute electricity cost for no renewables
   basic_cost = D .* P;
   total_basic_cost = sum(basic_cost);
   
   % Compute electricity cost with renewables non storage
-  renew_cost = max(0, netdemand) .* P;
+  renew_cost = unmet .* P;
   total_renew_cost = sum(renew_cost);
  
   % Compute electricity cost with storage
-  cost(1:N_hours) = max(0, netdemand) .* P - discharged(1:N_hours)'.*P;
-  totalcost = sum(cost);
+  totalcost = total_renew_cost - savings;
 
   %save('test.mat');
-
+  
   if logical(save_plots)
+    hours = 1:N_hours;
+
     H = newfig();
     xlabel('Time (hour)');
     ylabel('Power (kW)');
-    plot(hours(1:60), D(1:60), 'b', ...
-         hours(1:60), G(1:60), 'g', ...
-         hours(1:60), netdemand(1:60), 'r', ...
-         hours(1:60), zeros([1 60]), 'k:', 'LineWidth', 4);
-    legend('Demand', 'Generation', 'Net Demand');
-    savefig_(H, 'netdemand_lines');
-    
+    plot(hours, D, 'b', ...
+         hours, -G, 'g', ...
+         hours, netdemand, 'r', ...
+         hours, -min(overgen, c_in), 'y', ...
+         hours, -charge, 'k.', ...
+         'LineWidth', 2, 'MarkerSize', 15);
+    legend('Demand', 'Generation', 'Net Demand', 'Available for storage', ...
+           'Stored/discharged', 'Location', 'Best');
+    % Only display three days, less spiky
+    xlim([0 72]);
+    % Reference lines
+    plot([1 N_hours], [0 0], 'k:', ...
+         [1 N_hours], -c_in * [1 1], 'k:', ...
+         [1 N_hours], c_out * [1 1], 'k:');
+    savefig_(H, strcat('power', number_batteries));
+        
     H = newfig();
     xlabel('Time (hour)');
     ylabel('Energy (kW·h)');
     plot(hours, stored, 'b', ...
-         hours, overgeneration, 'r', ...
-         hours, ones([1 N_hours]) * e_max * number_batteries, 'k:', ...
-         'Linewidth', 4);
-    legend('Storage', 'Over Generation', 'Energy Capacity');
-    savefig_(H, 'storage_use_withgen');
+         hours(overgen > 0), min(overgen(overgen > 0), c_in), 'y.', ...
+         hours(charge > 0), charge(charge > 0), 'k.', ...
+         'Linewidth', 4, 'MarkerSize', 30);
+    legend('Battery state of charge', 'Energy available for storage', ...
+           'Energy stored');
+    % Reference line
+    plot([1 N_hours], e_max * number_batteries * [1 1], 'k:');
+    xlim([0 72]);
+    savefig_(H, strcat('storage_use_withgen', number_batteries));
     
-    H = newfig();
-    xlabel('Time (hour)');
-    ylabel('Energy (kW·h)');
-    plot(hours, stored, 'b', ...
-         hours, ones([1 N_hours]) * e_max * number_batteries, 'k:', ...
-         'LineWidth', 4);
-    legend('Storage', 'Energy Capacity');
-    savefig_(H, 'storage_use');
+%     % currently unused
+%     H = newfig();
+%     xlabel('Time (hour)');
+%     ylabel('Energy (kW·h)');
+%     plot(hours, stored, 'b', 'LineWidth', 4);
+%     legend('Storage');
+%     % Reference line
+%     plot([1 N_hours], e_max * number_batteries * [1 1], 'k:');
+%     xlim([0 72]);
+%     savefig_(H, strcat('storage_use', number_batteries));
   end
 end

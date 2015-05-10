@@ -11,6 +11,7 @@ function examples()
   V3 = wind(lambda_w, k_w, 'peaky');
   G1 = generation(V1);
   G2 = generation(V2);
+  G3 = generation(V3);
 
   H = newfig();
   xlabel('Time (hour)');
@@ -27,49 +28,60 @@ function examples()
   H = newfig();
   ylabel('Count');
   xlabel('Wind speed (m/s)');
-  [NV, ~] = histcounts(V1, 'BinWidth', 1);
-  histogram(V1, 'BinWidth', 1);
-  histogram(V2, 'BinWidth', 1);
-  histogram(V3, 'BinWidth', 1);
+  % histogram options
+  opts = {'BinWidth', 1, 'Normalization', 'pdf'};
+  [NV, ~] = histcounts(V1, opts{:});
+  histogram(V1, opts{:});
+  histogram(V2, opts{:});
+  histogram(V3, opts{:});
   legend('Weibull', 'Ordered', 'Peaky');
+  % add the engineering parameters for the turbine
   plot(V_cutin * [1 1], [0 max(NV)], 'r', ...
        V_rated * [1 1], [0 max(NV)], 'g', ...
        V_cutout * [1 1], [0 max(NV)], 'b', 'LineWidth', 3);
+  % add the actual Weibull PDF
+  x = linspace(min([V1 V2 V3]), max([V1 V2 V3]));
+  plot(x, wblpdf(x, lambda_w, k_w), 'k:', 'LineWidth', 3);
   savefig_(H, 'wind_hist1');
 
-%   H = newfig();
-%   ylabel('Count');
-%   xlabel('Wind generation (kW)');
-%   [NG, ~] = histcounts(G1,  -0.1:0.2:G_max+0.1);
-%   histogram(G1, -0.1:0.2:G_max+0.1);
-%   histogram(G2, -0.1:0.2:G_max+0.1);
-%   legend('Weibull', 'Ordered');
-%   plot(G_max * [1 1], [0 max(NG)], 'g', 'Linewidth', 3);
-%   savefig_(H, 'wind_hist2');
-%  
-%   % PRICES: a plot contrasting different price aggregation levels
-%   P = price();
-%   P1 = agg_price(P, 1, 1);
-%   P2 = agg_price(P, 4, 1);
-%   P3 = agg_price(P, 6, 4);
-%   P4 = agg_price(P, 24, 1);
-% 
-%   x = 1:size(P, 2);
-%   [x1, y1] = stairs((hours' - 1) * 60, P1);
-%   [x2, y2] = stairs((hours' - 1) * 60, P2);
-%   [x3, y3] = stairs((hours' - 1) * 60, P3);
-%   [x4, y4] = stairs((hours' - 1) * 60, P4);
-% 
-%   H = newfig();
-%   xlabel('Time (hour)');
-%   ylabel('Price ($/kW·h)');
-% 
-%   x1 = x1 ./ 60;
-%   plot(x ./ 60, P)
-%   savefig_(H, 'price_example1');
-%   plot(x1, y1, x1, y2, x1, y3, x1, y4, 'LineWidth', 3);
-%   legend({'Spot', '1 h mean', '4 h mean', '4 h mean, 3 h offset', ...
-%           '24 h mean'})
-%   savefig_(H, 'price_example2');
+  H = newfig();
+  ylabel('Count');
+  xlabel('Wind generation (kW)');
+  [NG, ~] = histcounts(G1,  -0.1:0.2:G_max+0.1);
+  histogram(G1, -0.1:0.2:G_max+0.1);
+  histogram(G2, -0.1:0.2:G_max+0.1);
+  histogram(G3, -0.1:0.2:G_max+0.1);  
+  legend('Weibull', 'Ordered', 'Peaky');
+  plot(G_max * [1 1], [0 max(NG)], 'g', 'Linewidth', 3);
+  savefig_(H, 'wind_hist2');
+ 
+  % PRICES: a plot contrasting different price aggregation levels
+  P = price();
+  P1 = agg_price(P, 1, 1);
+  P2 = agg_price(P, 4, 1);
+  P3 = agg_price(P, 6, 4);
+  P4 = agg_price(P, 24, 1);
+
+  x = 1:size(P, 2);
+  [x1, y1] = stairs((hours' - 1) * 60, P1);
+  [x2, y2] = stairs((hours' - 1) * 60, P2);
+  [x3, y3] = stairs((hours' - 1) * 60, P3);
+  [x4, y4] = stairs((hours' - 1) * 60, P4);
+
+  H = newfig();
+  xlabel('Time (hour)');
+  ylabel('Price ($/kW·h)');
+
+  x1 = x1 ./ 60;
+  plot(x ./ 60, P)
+  savefig_(H, 'price_example1');
+  plot(x1, y1, x1, y2, x1, y3, x1, y4, 'LineWidth', 3);
+  legend({'Spot', '1 h mean', '4 h mean', '4 h mean, 3 h offset', ...
+          '24 h mean'})
+  savefig_(H, 'price_example2');
+
+  % Example of the household's
+  household(1, true);
+  household(3, true)
 
 end

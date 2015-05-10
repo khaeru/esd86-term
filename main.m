@@ -13,10 +13,6 @@ function main(cmd)
       % Run a Monte Carlo simulation with 500 draws, and plot a histogram
       montecarlo(500)
 
-    case 'single'
-      % Run a single simulation, saving the plots
-      household(true,1)
-
     case 'examples'
       examples()
   end
