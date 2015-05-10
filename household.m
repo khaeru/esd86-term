@@ -63,7 +63,7 @@ function [totalcost, excess, total_basic_cost, total_renew_cost]...
     plot([1 N_hours], [0 0], 'k:', ...
          [1 N_hours], -c_in * [1 1], 'k:', ...
          [1 N_hours], c_out * [1 1], 'k:');
-    savefig_(H, strcat('power', number_batteries));
+    savefig_(H, strcat('power', num2str(number_batteries)));
         
     H = newfig();
     xlabel('Time (hour)');
@@ -77,7 +77,7 @@ function [totalcost, excess, total_basic_cost, total_renew_cost]...
     % Reference line
     plot([1 N_hours], e_max * number_batteries * [1 1], 'k:');
     xlim([0 72]);
-    savefig_(H, strcat('storage_use_withgen', number_batteries));
+    savefig_(H, strcat('storage_use_withgen', num2str(number_batteries)));
     
 %     % currently unused
 %     H = newfig();
@@ -88,6 +88,6 @@ function [totalcost, excess, total_basic_cost, total_renew_cost]...
 %     % Reference line
 %     plot([1 N_hours], e_max * number_batteries * [1 1], 'k:');
 %     xlim([0 72]);
-%     savefig_(H, strcat('storage_use', number_batteries));
+%     savefig_(H, strcat('storage_use', num2str(number_batteries)));
   end
 end
