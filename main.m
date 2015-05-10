@@ -12,37 +12,13 @@ function main(cmd)
     case 'mc'
       % Run a Monte Carlo simulation with 500 draws, and plot a histogram
       montecarlo(500)
-  
+
     case 'single'
       % Run a single simulation, saving the plots
       household(true,1)
 
-    case 'prices'
-      % Generate a plot contrasting different price aggregation levels
-      P = price();
-      P1 = agg_price(P, 1, 1);
-      P2 = agg_price(P, 4, 1);
-      P3 = agg_price(P, 6, 4);
-      P4 = agg_price(P, 24, 1);
-      x = 1:size(P, 2);
-      global N_hours;
-      hours = 1:N_hours;
-      [x1, y1] = stairs((hours' - 1) * 60, P1);
-      [x2, y2] = stairs((hours' - 1) * 60, P2);
-      [x3, y3] = stairs((hours' - 1) * 60, P3);
-      [x4, y4] = stairs((hours' - 1) * 60, P4);
-
-      H = newfig();
-      xlabel('Time (hour)');
-      ylabel('Price ($/kW·h)');
-
-      x1 = x1 ./ 60;
-      plot(x ./ 60, P)
-      savefig_(H, 'price_example1');
-      plot(x1, y1, x1, y2, x1, y3, x1, y4, 'LineWidth', 3);
-      legend({'Spot', '1 h mean', '4 h mean', '4 h mean, 3 h offset', ...
-              '24 h mean'})
-      savefig_(H, 'price_example2');
+    case 'examples'
+      examples()
   end
 end
 
@@ -165,7 +141,7 @@ function [totalcost, excess, total_basic_cost, total_renew_cost]...
   %   totalcost = household(save_plots)
   %     Save files 'power.svg' and 'netdemand.svg' if save_plots is true
   %     (default: false).
-  global N_hours mu_d sigma_d lambda_w k_w V_cutin V_rated V_cutout G_max;
+  global N_hours mu_d sigma_d lambda_w k_w;
   
   if nargin < 1
     save_plots = false;
@@ -175,7 +151,8 @@ function [totalcost, excess, total_basic_cost, total_renew_cost]...
 
   % Draw from the distributions
   D = demand(mu_d, sigma_d);
-  [G, ~] = generation(lambda_w, k_w, V_cutin, V_rated, V_cutout, G_max);
+  V = wind(lambda_w, k_w, 'simple');
+  G = generation(V);
   P = agg_price(price());
 
   chargingcap = .81;
@@ -212,41 +189,33 @@ function [totalcost, excess, total_basic_cost, total_renew_cost]...
 
   if logical(save_plots)
     H = newfig();
-    xlabel('Time [hour]');
-    ylabel('Power [kW]');
+    xlabel('Time (hour)');
+    ylabel('Power (kW)');
     plot(hours(1:60), D(1:60), 'b', ...
          hours(1:60), G(1:60), 'g', ...
          hours(1:60), netdemand(1:60), 'r', ...
          hours(1:60), zeros([1 60]), 'k:', 'LineWidth', 4);
     legend('Demand', 'Generation', 'Net Demand');
-    savefig_(H, 'NetDemand_lines');
+    savefig_(H, 'netdemand_lines');
     
     H = newfig();
-    xlabel('Time [hour]');
-    ylabel('Energy [kW·h]');
+    xlabel('Time (hour)');
+    ylabel('Energy (kW·h)');
     plot(hours, stored, 'b', ...
          hours, overgeneration, 'r', ...
          hours, ones([1 N_hours]) * energycap * number_batteries, 'k:', ...
          'Linewidth', 4);
     legend('Storage', 'Over Generation', 'Energy Capacity');
-    savefig_(H, 'Storage_Use_WithGen');
+    savefig_(H, 'storage_use_withgen');
     
     H = newfig();
-    xlabel('Time [hour]');
-    ylabel('Energy [kW·h]');
+    xlabel('Time (hour)');
+    ylabel('Energy (kW·h)');
     plot(hours, stored, 'b', ...
          hours, ones([1 N_hours]) * energycap * number_batteries, 'k:', ...
          'LineWidth', 4);
     legend('Storage', 'Energy Capacity');
-    savefig_(H, 'Storage_Use');
-    
-    H = newfig();
-    bin_width = 3;
-    xlabel('Demand [kW]');
-    histogram(D, 'BinWidth', bin_width);
-    histogram(netdemand, 'BinWidth', bin_width);
-    legend('Gross', 'Net');
-    savefig_(H, 'NetDemand_hist');
+    savefig_(H, 'storage_use');
   end
 end
 

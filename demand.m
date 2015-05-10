@@ -3,7 +3,8 @@ function D = demand(mean, stddev)
   %     D = demand(hours, mean, stddev) returns a 1-by-N_hours matrix containing
   %     a base demand with added, uncorrelated, random noise distributed
   %     Normal(mean, stddev²)..
-  global N_days N_hours;
+  global N_days N_hours
+
   % Basic hourly data from Paatero & Lund (2006), Figure 4, p.283
   daily = [125 110 105 107 115 140 170 185 190 191 192 194 200 210 225 260 ...
            290 305 315 325 315 275 220 160];
