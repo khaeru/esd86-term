@@ -10,8 +10,11 @@ function montecarlo(N)
   cost_variance = zeros([N 3]);
   for i = 1:length(number_batteries)
     for draw = 1:N
+      if mod(draw, 10) == 1
+        disp([i draw])
+      end
       [totalcost(i,draw), excess(i,draw), total_basic_cost(i,draw), ...
-        total_renew_cost(i,draw)] = household([],number_batteries(i));
+        total_renew_cost(i,draw)] = household(number_batteries(i));
     end
 
     cost_mean(i,1) = mean(total_basic_cost(i,:));
@@ -61,10 +64,10 @@ function montecarlo(N)
   H = newfig();
   xlabel('Weekly Electricity Bill [$]');
   ylabel('Probability');
-  plot(basicline(1:N*i-1), diff(Y) ./ diff(basicline), ...
-       renewline(1:N*i-1), diff(Y) ./ diff(renewline), 'LineWidth', 4);
-  plot(totalcost_sort(1,1:N-1), diff(X) ./ diff(totalcost_sort(1,:)), ...
-       'LineWidth', 4);
+  opts = {'Normalization', 'pdf', 'DisplayStyle', 'stairs'};
+  histogram(basicline, opts{:});
+  histogram(renewline, opts{:});
+  histogram(totalcost_sort, opts{:});
   legend({'Cost without renewables', 'Cost with only renewables', ...
           'Cost with 1 Battery' }, 'Location', 'NorthEast');
   savefig_(H, 'pdf_mc');

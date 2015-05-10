@@ -1,13 +1,13 @@
 function [totalcost, excess, total_basic_cost, total_renew_cost]...
-    = household(save_plots, number_batteries)
+    = household(number_batteries, save_plots)
   % HOUSEHOLD  Simulate the household's energy storage situation.
   %   totalcost = household()
   %   totalcost = household(save_plots)
   %     Save files 'power.svg' and 'netdemand.svg' if save_plots is true
   %     (default: false).
-  global N_hours mu_d sigma_d lambda_w k_w;
+  global N_hours mu_d sigma_d lambda_w k_w e_max c_in c_out
   
-  if nargin < 1
+  if nargin < 2
     save_plots = false;
   end
   
@@ -18,37 +18,36 @@ function [totalcost, excess, total_basic_cost, total_renew_cost]...
   V = wind(lambda_w, k_w, 'simple');
   G = generation(V);
   P = agg_price(price());
-
-  chargingcap = .81;
-  dischargingcap = .81;
-  energycap = .81;
+  
   % Compute net demand
   netdemand = D - G;
-  overgeneration = zeros(1,length(netdemand));
-  negativedemand = zeros(1, length(netdemand));
-  overgenstep = overgeneration;
+
   % Creates an hourly matrix of when energy is available for storage.
-  overgenstep(find(netdemand<0)) = netdemand(netdemand<0);
-  overgenstep = abs(overgenstep);
-  negativedemand(find(netdemand>0)) = netdemand(netdemand>0);
-  overgeneration(find(overgenstep<chargingcap)) = overgenstep(overgenstep < ...
-                                                              chargingcap);
-  overgeneration(find(overgenstep>chargingcap)) = chargingcap;
+  overgeneration = max(0, -netdemand);
+  overgeneration(overgeneration > c_in) = c_in;
+
+  % Demand unmet by generation
+  negativedemand = max(0, netdemand);
+
   [discharged, stored] = optimized_behavior(overgeneration, P, ...
-      negativedemand,  dischargingcap, number_batteries*energycap);
+                                            negativedemand, c_out, ...
+                                            number_batteries * e_max);
+
   % Integrate negative-demand hours -> battery storage
   excess = -sum(max(0, netdemand));
   
   % Compute electricity cost for no renewables
   basic_cost = D .* P;
   total_basic_cost = sum(basic_cost);
-  %compute electricity cost with renewables non storage
+  
+  % Compute electricity cost with renewables non storage
   renew_cost = max(0, netdemand) .* P;
   total_renew_cost = sum(renew_cost);
  
-  %compute electricity cost with storage
+  % Compute electricity cost with storage
   cost(1:N_hours) = max(0, netdemand) .* P - discharged(1:N_hours)'.*P;
   totalcost = sum(cost);
+
   %save('test.mat');
 
   if logical(save_plots)
@@ -67,7 +66,7 @@ function [totalcost, excess, total_basic_cost, total_renew_cost]...
     ylabel('Energy (kW·h)');
     plot(hours, stored, 'b', ...
          hours, overgeneration, 'r', ...
-         hours, ones([1 N_hours]) * energycap * number_batteries, 'k:', ...
+         hours, ones([1 N_hours]) * e_max * number_batteries, 'k:', ...
          'Linewidth', 4);
     legend('Storage', 'Over Generation', 'Energy Capacity');
     savefig_(H, 'storage_use_withgen');
@@ -76,7 +75,7 @@ function [totalcost, excess, total_basic_cost, total_renew_cost]...
     xlabel('Time (hour)');
     ylabel('Energy (kW·h)');
     plot(hours, stored, 'b', ...
-         hours, ones([1 N_hours]) * energycap * number_batteries, 'k:', ...
+         hours, ones([1 N_hours]) * e_max * number_batteries, 'k:', ...
          'LineWidth', 4);
     legend('Storage', 'Energy Capacity');
     savefig_(H, 'storage_use');
