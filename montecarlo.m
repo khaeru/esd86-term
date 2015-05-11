@@ -1,6 +1,6 @@
 function montecarlo(N)
   % MONTECARLO Monte Carlo simulation of the households.
-  number_batteries = [1 2 3 4 5];
+  number_batteries = [1 0.8 2 3 4 5];
 
   totalcost = zeros([length(number_batteries) N]);
   excess = zeros([length(number_batteries) N]);
@@ -43,33 +43,37 @@ function montecarlo(N)
   Y_diff = 1/(N*i-1):1/(N*i-1):1;
   %save('test.mat');
 
-  H = newfig();
-  histogram(totalcost)
-  savefig_(H, 'costs_mc');
-  
-  H = newfig();
-  histogram(excess)
-  savefig_(H, 'excess_mc');
+%   % currently unused
+%   H = newfig();
+%   histogram(totalcost)
+%   savefig_(H, 'costs_mc');
+%
+%   % currently unused
+%   H = newfig();
+%   histogram(excess)
+%   savefig_(H, 'excess_mc');
   
   H = newfig();
   xlabel('Weekly Electricity Bill [$]');
   ylabel('Probability');
   plot(basicline, Y, renewline, Y, totalcost_sort, X, 'LineWidth', 4);
-  legend({'Cost without renewables', 'Cost with only renewables', ...
-         'Cost with 1 Battery', 'Cost with 2 Batteries', ...
-         'Cost with 3 Batteries', 'Cost with 4 Batteries', ...
-         'Cost with 5 Batteries'}, 'Location', 'NorthEast');
+  legend({'Cost w/o renewables', 'Cost w/ wind only', ...
+          'Cost w/ 1 battery', '"0.8" batteries', '2 batteries', ...
+          '3 batteries', '4 batteries', '5 batteries'}, 'Location', 'Best');
   savefig_(H,'cdf_mc');
   
   H = newfig();
   xlabel('Weekly Electricity Bill [$]');
-  ylabel('Probability');
-  opts = {'Normalization', 'pdf', 'DisplayStyle', 'stairs'};
+  ylabel('pdf');
+  opts = {'Normalization', 'pdf', 'EdgeColor', 'none'};
   histogram(basicline, opts{:});
   histogram(renewline, opts{:});
-  histogram(totalcost_sort, opts{:});
-  legend({'Cost without renewables', 'Cost with only renewables', ...
-          'Cost with 1 Battery' }, 'Location', 'NorthEast');
+  histogram(totalcost_sort(1,:), opts{:});
+  histogram(totalcost_sort(2,:), opts{:});
+  histogram(totalcost_sort(6,:), opts{:});
+  legend({'Cost w/o renewables', 'Cost w/ wind only', ...
+          'Cost w/ 1 battery', '"0.8" batteries', '5 batteries'}, ...
+          'Location', 'Best');
   savefig_(H, 'pdf_mc');
   
   H = newfig();
@@ -77,9 +81,8 @@ function montecarlo(N)
   ylabel('Probability');
   plot(basicline, Y, renewline, Y, 'LineWidth', 4);
   plot(totalcost_sort + Batt_ann_matrix, X, 'LineWidth', 4);
-  legend({'Cost without renewables', 'Cost with only renewables', ...
-          'Cost with 1 Battery', 'Cost with 2 Batteries', ...
-          'Cost with 3 Batteries', 'Cost with 4 Batteries', ...
-          'Cost with 5 Batteries'}, 'Location', 'NorthEast');
+  legend({'Cost w/o renewables', 'Cost w/ wind only', ...
+          'Cost w/ 1 battery', '"0.8" batteries', '2 batteries', ...
+          '3 batteries', '4 batteries', '5 batteries'}, 'Location', 'Best');
   savefig_(H, 'cdf_mc_annuity');
 end

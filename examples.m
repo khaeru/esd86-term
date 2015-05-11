@@ -13,17 +13,18 @@ function examples()
   G2 = generation(V2);
   G3 = generation(V3);
 
-  H = newfig();
-  xlabel('Time (hour)');
-  ylabel('Wind speed (m/s) or gen (kW)');
-  plot(hours, V1, hours, G1, hours, V2, hours, G2, hours, V3);
-  legend('Weibull speed', 'Weibull gen', 'Ordered speed', 'Ordered gen', ...
-         'Peaky speed');
-  xlim([0 48]);
-  plot([0 N_hours], V_cutin * [1 1], 'r', ...
-       [0 N_hours], V_rated * [1 1], 'g', ...
-       [0 N_hours], V_cutout * [1 1], 'b', 'LineWidth', 3);
-  savefig_(H, 'windgen');
+%   % currently unused
+%   H = newfig();
+%   xlabel('Time (hour)');
+%   ylabel('Wind speed (m/s) or gen (kW)');
+%   plot(hours, V1, hours, G1, hours, V2, hours, G2, hours, V3);
+%   legend('Weibull speed', 'Weibull gen', 'Ordered speed', 'Ordered gen', ...
+%          'Peaky speed');
+%   xlim([0 48]);
+%   plot([0 N_hours], V_cutin * [1 1], 'r', ...
+%        [0 N_hours], V_rated * [1 1], 'g', ...
+%        [0 N_hours], V_cutout * [1 1], 'b', 'LineWidth', 3);
+%   savefig_(H, 'windgen');
 
   H = newfig();
   ylabel('Count');
@@ -34,11 +35,12 @@ function examples()
   histogram(V1, opts{:});
   histogram(V2, opts{:});
   histogram(V3, opts{:});
-  legend('Weibull', 'Ordered', 'Peaky');
   % add the engineering parameters for the turbine
   plot(V_cutin * [1 1], [0 max(NV)], 'r', ...
        V_rated * [1 1], [0 max(NV)], 'g', ...
        V_cutout * [1 1], [0 max(NV)], 'b', 'LineWidth', 3);
+  legend('Weibull', 'Ordered', 'Peaky', ...
+         'v_{cut-in}', 'v_{rated}', 'v_{cut-out}');
   % add the actual Weibull PDF
   x = linspace(min([V1 V2 V3]), max([V1 V2 V3]));
   plot(x, wblpdf(x, lambda_w, k_w), 'k:', 'LineWidth', 3);
@@ -50,7 +52,7 @@ function examples()
   [NG, ~] = histcounts(G1,  -0.1:0.2:G_max+0.1);
   histogram(G1, -0.1:0.2:G_max+0.1);
   histogram(G2, -0.1:0.2:G_max+0.1);
-  histogram(G3, -0.1:0.2:G_max+0.1);  
+  histogram(G3, -0.1:0.2:G_max+0.1);
   legend('Weibull', 'Ordered', 'Peaky');
   plot(G_max * [1 1], [0 max(NG)], 'g', 'Linewidth', 3);
   savefig_(H, 'wind_hist2');
@@ -80,8 +82,8 @@ function examples()
           '24 h mean'})
   savefig_(H, 'price_example2');
 
-  % Example of the household's
+  % Example of the household's situation
   household(1, true);
-  household(3, true)
+  household(3, true);
 
 end
