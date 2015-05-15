@@ -39,11 +39,12 @@ function examples()
   plot(V_cutin * [1 1], [0 max(NV)], 'r', ...
        V_rated * [1 1], [0 max(NV)], 'g', ...
        V_cutout * [1 1], [0 max(NV)], 'b', 'LineWidth', 3);
-  legend('Weibull', 'Ordered', 'Peaky', ...
-         'v_{cut-in}', 'v_{rated}', 'v_{cut-out}');
   % add the actual Weibull PDF
   x = linspace(min([V1 V2 V3]), max([V1 V2 V3]));
   plot(x, wblpdf(x, lambda_w, k_w), 'k:', 'LineWidth', 3);
+  legend('Weibull', 'Ordered', 'Peaky', ...
+         'v_{cut-in}', 'v_{rated}', 'v_{cut-out}', ...
+         'Weibull pdf');
   savefig_(H, 'wind_hist1');
 
   H = newfig();
@@ -53,8 +54,8 @@ function examples()
   histogram(G1, -0.1:0.2:G_max+0.1);
   histogram(G2, -0.1:0.2:G_max+0.1);
   histogram(G3, -0.1:0.2:G_max+0.1);
-  legend('Weibull', 'Ordered', 'Peaky');
   plot(G_max * [1 1], [0 max(NG)], 'g', 'Linewidth', 3);
+  legend('Weibull', 'Ordered', 'Peaky', 'g_{max}');
   savefig_(H, 'wind_hist2');
  
   % PRICES: a plot contrasting different price aggregation levels
@@ -78,7 +79,7 @@ function examples()
   plot(x ./ 60, P)
   savefig_(H, 'price_example1');
   plot(x1, y1, x1, y2, x1, y3, x1, y4, 'LineWidth', 3);
-  legend({'Spot', '1 h mean', '4 h mean', '4 h mean, 3 h offset', ...
+  legend({'Spot', '1 h mean', '4 h mean', '6 h mean, 3 h offset', ...
           '24 h mean'})
   savefig_(H, 'price_example2');
 
